@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    form {
+      margin-top: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type='text'],
+    input[type='file'],
+    textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    input[type='file'] {
+      padding: 5px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .signature {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+    }
+
+    #signature-pad {
+      border: 2px dotted #666;
+      width: 100%;
+      height: 200px;
+    }
+
+    .logo {
+      display: block;
+      margin: 20px auto;
+      max-width: 200px;
+    }
+
+    #signatureDisplay {
+      font-style: italic;
+      margin-bottom: 10px;
+      justify-content: space-between
+    }
+
+    .error-message {
+      color: red;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    .log-con {
+      display: flex;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div style="display: flex; justify-content: center" id="remove-path">
+      <img style="height: 220px; width: 220px; margin-bottom: 15px" src="./logo.jpeg" border="0" alt="logo" />
+    </div>
+
+    <form id="iotForm">
+      <label for="invoiceNumber">Invoice Number:</label>
+      <input type="text" id="invoiceNumber" name="invoiceNumber" required />
+
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="email">Email:</label>
+      <input type="text" id="email" name="email" required />
+
+      <label for="phoneNumber">Phone Number:</label>
+      <input type="text" id="phoneNumber" name="phoneNumber" required />
+
+
+      <label for="fileInput">Upload Photo:</label>
+      <div id="path">
+        <input type="file" id="fileInput" accept="image/*" onchange="previewPhoto(event)" />
+      </div>
+
+
+
+
+      <!-- Image Preview -->
+      <img id="previewImage" style="
+        max-width: 100%;
+        height: 300px;
+        max-height: 200px;
+        width: 250px;
+        margin-top: 10px;
+        display: none;
+      " />
+
+      <div id="signatureDisplay" style="display: none">
+        Customer Signature: <span id="customerSignature"></span>
+      </div>
+
+      <button type="button" id="signButton" onclick="signDocument()" required style="
+        background-color: gold;
+        color: black;
+        font-weight: bold;
+        font-style: italic;
+        padding: 10px;
+        border: 2px solid black;
+        cursor: pointer;
+        margin-top: 10px;
+      ">
+        Click to Sign
+      </button>
+      <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+      <div class="checkbox-group" style="margin-bottom: 3px; display: flex; align-items: center">
+        <input type="checkbox" id="termsCheckbox" onchange="toggleGeneratePdfButton()" required
+          style="margin-right: 5px" />
+        <label for="termsCheckbox">I acknowledge and agree to the
+          <a href="terms_and_conditions_url" target="_blank">Terms and Conditions</a>.</label>
+      </div>
+
+      <button type="button" id="generatePDFButton" class="btn" onclick="generatePDF()" style="
+        pointer-events: none;
+        opacity: 0.5;
+        font-size: 18px;
+        margin-top: 10px;
+      ">
+        Submit Agreement
+      </button>
+    </form>
+  </div>
+
+  <!-- Include jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+  <script>
+    function previewPhoto() {
+      const fileInput = document.getElementById('fileInput');
+      const previewImage = document.getElementById('previewImage');
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          previewImage.src = e.target.result;
+          previewImage.style.display = 'block';
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      }
+    }
+
+    function signDocument() {
+      const nameField = document.getElementById('name').value;
+      const signatureDisplay = document.getElementById('signatureDisplay');
+      const customerSignature = document.getElementById('customerSignature');
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!nameField) {
+        errorMessage.textContent = 'Please fill in all fields.';
+        errorMessage.style.display = 'block';
+        return;
+      } else {
+        errorMessage.style.display = 'none';
+      }
+
+      if (!document.getElementById('termsCheckbox').checked) {
+        errorMessage.textContent = 'Please check "I acknowledge and agree to the Terms and Conditions."';
+        errorMessage.style.display = 'block';
+        return;
+      } else {
+        errorMessage.style.display = 'none';
+      }
+
+      customerSignature.textContent = nameField;
+      signatureDisplay.style.display = 'flex';
+
+
+      document.getElementById('signButton').style.display = 'none';
+
+      if (document.getElementById('termsCheckbox').checked) {
+        document.getElementById('generatePDFButton').style.opacity = 1;
+        document.getElementById('generatePDFButton').style.pointerEvents =
+          'auto';
+      }
+    }
+
+    function toggleGeneratePdfButton() {
+      if (document.getElementById('termsCheckbox').checked) {
+        document.getElementById('generatePDFButton').style.opacity = 1;
+        document.getElementById('generatePDFButton').style.pointerEvents =
+          'auto';
+      } else {
+        document.getElementById('generatePDFButton').style.opacity = 0.5;
+        document.getElementById('generatePDFButton').style.pointerEvents =
+          'none';
+      }
+    }
+
+    function generatePDF() {
+      // Get invoice number and name
+      const invoiceNumber = document.getElementById('invoiceNumber').value;
+      const name = document.getElementById('name').value;
+
+      // Temporarily hide elements for the PDF
+      const termsSection = document.querySelector('.checkbox-group');
+      const signButton = document.getElementById('signButton');
+      const remove = document.getElementById('remove-path');
+      const remove2 = document.getElementById('path');
+
+      const generatePDFButton = document.getElementById('generatePDFButton');
+
+      termsSection.style.display = 'none';
+      signButton.style.display = 'none';
+      remove.style.display = 'none';
+      remove2.style.display = 'none';
+      generatePDFButton.style.display = 'none';
+
+      // Add current time at the bottom
+      const currentTime = new Date().toLocaleString();
+      const timeParagraph = document.createElement('p');
+      timeParagraph.textContent = `Generated on: ${currentTime}`;
+      timeParagraph.style.textAlign = 'center'; // Center align the text
+      document.getElementById('iotForm').appendChild(timeParagraph);
+
+      // Create a div to hold the logo image
+      const logoDiv = document.createElement('div');
+      logoDiv.style.display = 'flex';
+      logoDiv.style.justifyContent = 'center';
+      logoDiv.innerHTML = `<img src="./logo.jpeg" alt="Logo" style="max-width: 220px; height: 220px; margin-bottom: 6px;">`;
+
+      // Append the logo div to the form before converting it to PDF
+      document.getElementById('iotForm').insertBefore(logoDiv, document.getElementById('iotForm').firstChild);
+
+
+      const element = document.getElementById('iotForm');
+      const opt = {
+        margin: 1,
+        filename: `${invoiceNumber}_${name}.pdf`, // Set filename
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+      };
+
+      // Generate PDF
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          // Once PDF is saved, show the hidden elements again and remove the time paragraph
+          termsSection.style.display = 'flex';
+          signButton.style.display = 'block';
+          generatePDFButton.style.display = 'block';
+          timeParagraph.remove(); // Remove the time paragraph added
+        });
+    }
+
+  </script>
+</body>
+
+</html>
